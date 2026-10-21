@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>CS Lecture Finder</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%234f46e5'/><path d='M12 9l12 7-12 7z' fill='white'/></svg>">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8"/><path d="M12 9l12 7-12 7z"/></svg></span>
+    <div><strong>CS Lecture Finder</strong><small>free computer-science courses, ranked by quality</small></div>
+  </div>
+  <form id="searchForm" class="search" autocomplete="off">
+    <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Filter the library — e.g. compilers, 6.006, ipfs, transformers">
+  </form>
+  <div class="top-actions">
+    <span class="pill" id="snapshotPill" title="This is a static snapshot. Your watch history is stored in this browser only."></span>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-view="recommended" class="active">Recommended</button>
+  <button data-view="progress">Continue watching <span class="count" id="cProgress"></span></button>
+  <button data-view="all">Library</button>
+  <button data-view="watched">Watched <span class="count" id="cWatched"></span></button>
+  <button data-view="hidden">Hidden <span class="count" id="cHidden"></span></button>
+  <button class="filters-btn" id="filtersBtn" type="button">Filters</button>
+</nav>
+
+<div class="layout" id="layout">
+  <aside class="side" id="side">
+    <section>
+      <h4>Quality = origin + views</h4>
+      <div class="weight">
+        <span>Views</span>
+        <input type="range" id="weight" min="0" max="100" step="5" value="60">
+        <span>Origin</span>
+      </div>
+      <p class="hint" id="weightHint"></p>
+    </section>
+    <section>
+      <h4>Sort</h4>
+      <select id="sort">
+        <option value="quality">Quality score</option>
+        <option value="views">Most viewed</option>
+        <option value="reputation">Institution reputation</option>
+        <option value="recent">Recently discovered</option>
+      </select>
+      <label class="check"><input type="checkbox" id="known" checked> Known institutions only</label>
+    </section>
+    <section>
+      <h4>Institution</h4>
+      <select id="instSel"><option value="">All institutions</option></select>
+      <h4>Source</h4>
+      <select id="sourceSel">
+        <option value="">All sources</option>
+        <option value="youtube">YouTube</option>
+        <option value="archive">Internet Archive</option>
+      </select>
+    </section>
+    <section>
+      <h4>Topics</h4>
+      <div id="topicList" class="topics"></div>
+    </section>
+    <p class="hint" id="libStats"></p>
+    <p class="hint">Static snapshot — watch history and “not interested” live in this browser (localStorage), not on a server.</p>
+  </aside>
+
+  <main id="main">
+    <div id="grid" class="grid"></div>
+    <div class="more"><button id="moreBtn" class="btn ghost hidden">Show more</button></div>
+  </main>
+</div>
+
+<!-- Player -->
+<div id="player" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <button class="close" id="closePlayer" aria-label="Close">&times;</button>
+    <div class="stage"><div id="stage"></div></div>
+    <div class="player-info">
+      <div class="pi-main">
+        <h2 id="pTitle"></h2>
+        <div class="meta" id="pMeta"></div>
+        <div class="scorebox" id="pScore"></div>
+        <p class="desc" id="pDesc"></p>
+      </div>
+      <div class="pi-actions">
+        <button class="btn" id="pWatched"></button>
+        <a class="btn ghost" id="pExternal" target="_blank" rel="noopener">Open on source</a>
+        <button class="btn ghost" id="pHide">Not interested</button>
+        <button class="btn ghost" id="pNext">Next recommended &rarr;</button>
+      </div>
+    </div>
+    <div class="upnext"><h4>Up next</h4><div id="upnext"></div></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<script src="app.js"></script>
+</body>
+</html>
