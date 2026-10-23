@@ -247,6 +247,11 @@ TOPIC_QUERIES = [
     "negotiation lecture", "history lecture university course", "economics lecture course",
     "public speaking lecture", "critical thinking lecture", "meaning of life lecture",
     "longevity health lecture",
+    # economics
+    "microeconomics lecture course", "macroeconomics lecture course",
+    "finance lecture university course", "game theory lecture course",
+    "development economics lecture", "econometrics lecture course",
+    "economic history lecture", "behavioral economics lecture course",
 ]
 
 DEEP_SUFFIXES = ["algorithms lecture", "machine learning lecture", "systems lecture",

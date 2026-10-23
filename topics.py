@@ -56,13 +56,23 @@ TOPICS = {
                             r"productivity|time management|entrepreneurship|leadership",
     "History & Civilization": r"history of|world history|civili[sz]ation|ancient (rome|greece|egypt|history)|"
                               r"archaeolog|anthropolog|\bempires?\b|world war|\bmedieval\b|renaissance|cold war",
-    "Economics & Society": r"\beconom|sociolog|geopolitic|political (science|philosophy|econom)|democracy|inequality",
+    "Society & Politics": r"sociolog|geopolitic|political (science|philosophy)|democracy|social (justice|change)|current affairs",
     "Communication & Relationships": r"public speaking|rhetoric|communication skills?|how to (talk|speak)|storytelling|"
                                      r"relationships?\b|body language|charisma|persuasion|\bconversations?\b",
     "Rationality & Decision-Making": r"decision.making|critical thinking|rationality|cognitive bias|mental models?|"
                                      r"first principles|clear(er)? thinking|problem.solving|bayesian (reasoning|thinking)|fallac",
     "Meaning & Religion": r"meaning of life|religion|theolog|spiritual|buddhis|consciousness|mortality|good life|"
                           r"mythology|\bzen\b|\bfaith\b",
+    # --- economics (specific topics first; General Economics is the catch-all) ---
+    "Microeconomics": r"microeconom|price theory|supply and demand|market design|consumer (choice|theory)|\b14\.01\b|econ ?101",
+    "Macroeconomics": r"macroeconom|monetary policy|inflation|central bank|fiscal policy|business cycle|recession|\bgdp\b|\b14\.02\b",
+    "Finance & Markets": r"\bfinance\b|financial (markets?|crisis|system)|asset pricing|portfolio|stock market|"
+                         r"\bbanking\b|valuation|\b15\.401\b|corporate finance",
+    "Game Theory & Incentives": r"game theory|mechanism design|auction|incentives|behavio(u)?ral econom|nash equilibrium",
+    "Development & Political Economy": r"development econom|political econom|globali[sz]ation|trade polic|inequality|"
+                                       r"\bpoverty\b|public policy|labor econom|economic growth",
+    "Economic History": r"economic history|history of (capitalism|money|finance)|great depression|financial crisis of|adam smith|keynes",
+    "General Economics": r"\beconom",
 }
 assert not any("," in t for t in TOPICS), "topic names are stored comma-joined and must not contain commas"
 _COMPILED = {k: re.compile(v, re.I) for k, v in TOPICS.items()}
@@ -74,12 +84,17 @@ PHYSICS_TOPICS = {
 }
 WISDOM_TOPICS = {
     "Philosophy", "Psychology & the Mind", "Life Advice & Experience", "Health & Longevity",
-    "Money & Career", "History & Civilization", "Economics & Society",
+    "Money & Career", "History & Civilization", "Society & Politics",
     "Communication & Relationships", "Rationality & Decision-Making", "Meaning & Religion",
 }
+ECON_TOPICS = {
+    "Microeconomics", "Macroeconomics", "Finance & Markets", "Game Theory & Incentives",
+    "Development & Political Economy", "Economic History", "General Economics",
+}
 # topic -> field; the "Other" fallback belongs to no field and shows under every field filter
-FIELD_OF = {t: ("physics" if t in PHYSICS_TOPICS else "wisdom" if t in WISDOM_TOPICS else "cs") for t in TOPICS}
-FIELDS = {"cs": "Computer Science", "physics": "Physics", "wisdom": "Wisdom & Life"}
+FIELD_OF = {t: ("physics" if t in PHYSICS_TOPICS else "wisdom" if t in WISDOM_TOPICS
+                else "econ" if t in ECON_TOPICS else "cs") for t in TOPICS}
+FIELDS = {"cs": "Computer Science", "physics": "Physics", "econ": "Economics", "wisdom": "Wisdom & Life"}
 
 _LECTURE = re.compile(
     r"\blecture\b|\blec\b|\bcourse\b|\bclass\b|\bseminar\b|\btutorial\b|\bsession\b|"
