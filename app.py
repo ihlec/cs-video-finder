@@ -94,8 +94,8 @@ def retag_topics():
         row = con.execute("SELECT value FROM meta WHERE key='topics_sig'").fetchone()
         if row and row[0] == sig:
             return
-        for r in con.execute("SELECT id, title, description, topics FROM videos").fetchall():
-            t = ",".join(classify(f"{r['title']} {r['description'] or ''}"))
+        for r in con.execute("SELECT id, title, channel, description, topics FROM videos").fetchall():
+            t = ",".join(classify(f"{r['title']} {r['channel'] or ''} {r['description'] or ''}"))
             if t != (r["topics"] or ""):
                 con.execute("UPDATE videos SET topics=? WHERE id=?", (t, r["id"]))
                 changed += 1
@@ -253,9 +253,9 @@ def list_videos(params: dict) -> dict:
         rows = [r for r in rows if r["institution"]]
     if inst_filter:
         rows = [r for r in rows if r["institution"] == inst_filter]
-    if field:  # topics without a field ("Other") show under every field
+    if field:  # strict: videos tagged only "Other" appear under All catalogs, not in a catalog
         from topics import FIELD_OF
-        rows = [r for r in rows if any(FIELD_OF.get(t, field) == field for t in r["topics"])]
+        rows = [r for r in rows if any(FIELD_OF.get(t) == field for t in r["topics"])]
 
     keyf = {
         "quality": lambda r: r["quality"],
@@ -316,11 +316,16 @@ def facets() -> dict:
         if i:
             insts[i] = insts.get(i, 0) + 1
         sources[r["source"]] = sources.get(r["source"], 0) + 1
-    from topics import FIELD_OF
+    from topics import FIELD_OF, FIELDS
+    field_counts: dict[str, int] = {}
+    for r in rows:
+        for fl in {FIELD_OF.get(t) for t in (r["topics"] or "").split(",") if t} - {None}:
+            field_counts[fl] = field_counts.get(fl, 0) + 1
     return {
         "total": len(rows), "watched": watched, "in_progress": progress, "hidden": hidden,
         "topics": sorted(topics.items(), key=lambda x: -x[1]),
         "topic_fields": {t: FIELD_OF.get(t) for t in topics},
+        "fields": [[k, v, field_counts.get(k, 0)] for k, v in FIELDS.items()],
         "institutions": sorted(insts.items(), key=lambda x: (-INST.score(x[0]), x[0])),
         "sources": sources,
     }

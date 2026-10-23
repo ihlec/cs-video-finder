@@ -62,7 +62,8 @@ def _yt_record(vid, title, channel, channel_id, views, duration, desc="", publis
         "views": int(views) if views is not None else None,
         "published": published,
         "description": (desc or "")[:600],
-        "topics": ",".join(classify(f"{title} {desc}")),
+        # the channel name often carries the course ("MIT 6.824: Distributed Systems")
+        "topics": ",".join(classify(f"{title} {channel or ''} {desc}")),
         "embeddable": embeddable,
     }
 
@@ -206,7 +207,7 @@ def archive_search(query: str, rows: int = 100):
             "views": d.get("downloads"),
             "published": (d.get("date") or "")[:10].replace("-", ""),
             "description": desc[:600],
-            "topics": ",".join(classify(f"{title} {desc}")),
+            "topics": ",".join(classify(f"{title} {creator or ''} {desc}")),
             "embeddable": 1,
         }
 
@@ -239,6 +240,13 @@ TOPIC_QUERIES = [
     "general relativity lecture course", "astrophysics lecture course",
     "cosmology lecture course", "particle physics lecture course",
     "condensed matter physics lecture", "vibrations and waves lecture course",
+    # wisdom & life
+    "philosophy lecture course", "stoicism lecture", "psychology lecture university course",
+    "commencement address", "life advice talk", "life lessons interview",
+    "how to live a good life lecture", "happiness lecture course", "personal finance lecture",
+    "negotiation lecture", "history lecture university course", "economics lecture course",
+    "public speaking lecture", "critical thinking lecture", "meaning of life lecture",
+    "longevity health lecture",
 ]
 
 DEEP_SUFFIXES = ["algorithms lecture", "machine learning lecture", "systems lecture",
@@ -258,7 +266,7 @@ def crawl_plan(institutions, deep: bool = False):
         if deep:
             plan += [("youtube", f"{s} {suf}") for suf in DEEP_SUFFIXES]
     plan += [("archive", '"computer science"'), ("archive", "algorithms OR programming OR \"machine learning\""),
-             ("archive", "physics lectures")]
+             ("archive", "physics lectures"), ("archive", "philosophy OR history lectures")]
     return plan
 
 

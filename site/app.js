@@ -14,11 +14,14 @@ const persist = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(store)
 const state = {
   view: "recommended", q: "", topic: "", institution: "", source: "", field: "", sort: "quality",
   known: true, weight: 0.6, offset: 0, items: [], total: 0,
+  open: {}, // which catalogs are expanded in the sidebar tree; all start collapsed
 };
 Object.assign(state, store.prefs || {});
-const savePrefs = () => { store.prefs = { weight: state.weight, known: state.known, sort: state.sort }; persist(); };
+const savePrefs = () => { store.prefs = { weight: state.weight, known: state.known, sort: state.sort, field: state.field }; persist(); };
 
 let LIB = { generated: "", institutions: [], videos: [] };
+
+const toTop = () => window.scrollTo({ top: 0 });
 
 function toast(msg, ms = 2600) {
   const t = $("#toast"); t.textContent = msg; t.classList.remove("hidden");
@@ -92,9 +95,9 @@ function listVideos() {
     }
   }
   if (state.topic) rows = rows.filter((r) => r.topics.includes(state.topic));
-  if (state.field) { // topics without a field ("Other") show under every field
+  if (state.field) { // strict: videos tagged only "Other" appear under All catalogs, not in a catalog
     const tf = LIB.topic_fields || {};
-    rows = rows.filter((r) => r.topics.some((t) => !tf[t] || tf[t] === state.field));
+    rows = rows.filter((r) => r.topics.some((t) => tf[t] === state.field));
   }
   if (state.source) rows = rows.filter((r) => r.source === state.source);
   if (state.known && (v === "recommended" || v === "all")) rows = rows.filter((r) => r.institution);
@@ -204,14 +207,7 @@ function loadFacets() {
   $("#cProgress").textContent = progress || "";
   $("#cHidden").textContent = hidden || "";
 
-  const topics = {};
-  for (const v of LIB.videos) for (const t of v.topics) topics[t] = (topics[t] || 0) + 1;
-  const tf = LIB.topic_fields || {};
-  const shown = Object.entries(topics).sort((a, b) => b[1] - a[1])
-    .filter(([t]) => !state.field || !tf[t] || tf[t] === state.field);
-  const tl = $("#topicList");
-  tl.innerHTML = `<button data-topic="" class="${state.topic ? "" : "active"}">All topics <small>${state.field ? "" : LIB.videos.length}</small></button>` +
-    shown.map(([t, n]) => `<button data-topic="${esc(t)}" class="${state.topic === t ? "active" : ""}">${esc(t)} <small>${n}</small></button>`).join("");
+  renderTree();
 
   const sel = $("#instSel"), cur = state.institution;
   sel.innerHTML = `<option value="">All institutions</option>` +
@@ -221,15 +217,56 @@ function loadFacets() {
   $("#libStats").textContent = `${LIB.videos.length} videos · ${yt} YouTube · ${LIB.videos.length - yt} Internet Archive · snapshot ${LIB.generated}`;
 }
 
+/* one tree for catalogs (fields) and their topics: a catalog header expands/collapses its
+   group (whole button), the "All <catalog>" row inside filters to the whole field, an
+   indented topic filters to that topic. All catalogs start collapsed for a clean overview. */
+function topicTree(topicCounts, tf, fields, total) {
+  const groups = Object.fromEntries(fields.map(([k]) => [k, []]));
+  const other = [];
+  for (const [t, n] of topicCounts) (groups[tf[t]] || other).push([t, n]);
+  let html = `<button data-topic="" data-field="" class="${!state.topic && !state.field ? "active" : ""}">All catalogs <small>${total}</small></button>`;
+  for (const [k, label, n] of fields) {
+    if (!groups[k].length) continue;
+    const open = !!state.open[k];
+    html += `<button class="group ${state.field === k && !state.topic ? "active" : ""}" data-toggle="${k}" title="${open ? "Collapse" : "Expand"}">` +
+      `<span class="tw">${open ? "▾" : "▸"}</span>${esc(label)} <small>${n}</small></button>`;
+    if (open) {
+      html += `<button class="sub" data-field="${k}" data-topic="">All ${esc(label)} <small>${n}</small></button>`;
+      html += groups[k].map(([t, c]) => `<button class="sub ${state.topic === t ? "active" : ""}" data-topic="${esc(t)}" data-field="">${esc(t)} <small>${c}</small></button>`).join("");
+    }
+  }
+  html += other.map(([t, c]) => `<button class="group other ${state.topic === t ? "active" : ""}" data-topic="${esc(t)}" data-field="">${esc(t)} <small>${c}</small></button>`).join("");
+  return html;
+}
+
+function renderTree() {
+  const topics = {};
+  for (const v of LIB.videos) for (const t of v.topics) topics[t] = (topics[t] || 0) + 1;
+  $("#topicList").innerHTML = topicTree(
+    Object.entries(topics).sort((a, b) => b[1] - a[1]),
+    LIB.topic_fields || {}, LIB.fields || [], LIB.videos.length);
+  updateCatalogChip();
+}
+
+function updateCatalogChip() {
+  const f = (LIB.fields || []).find(([k]) => k === state.field);
+  $("#catalogBtn").textContent = f ? f[1] : "All catalogs";
+}
+$("#catalogBtn").onclick = () => { // jump to the catalog tree (opens the sidebar on mobile)
+  $("#side").classList.add("open");
+  $("#topicList").scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
 $("#topicList").addEventListener("click", (e) => {
+  const g = e.target.closest("[data-toggle]");
+  if (g) { const k = g.dataset.toggle; state.open[k] = !state.open[k]; renderTree(); return; }
   const b = e.target.closest("button"); if (!b) return;
   state.topic = b.dataset.topic;
-  [...$("#topicList").children].forEach((x) => x.classList.toggle("active", x === b));
-  load();
+  state.field = b.dataset.field;
+  savePrefs(); loadFacets(); load();
 });
 $("#instSel").onchange = (e) => { state.institution = e.target.value; load(); };
 $("#sourceSel").onchange = (e) => { state.source = e.target.value; load(); };
-$("#fieldSel").onchange = (e) => { state.field = e.target.value; state.topic = ""; refreshAll(true); };
 $("#sort").onchange = (e) => { state.sort = e.target.value; savePrefs(); load(); };
 $("#known").onchange = (e) => { state.known = e.target.checked; savePrefs(); load(); };
 const weightHint = () => {
@@ -251,7 +288,7 @@ $("#tabs").addEventListener("click", (e) => {
   const b = e.target.closest("button[data-view]"); if (!b) return;
   [...$("#tabs").querySelectorAll("button[data-view]")].forEach((x) => x.classList.toggle("active", x === b));
   state.view = b.dataset.view;
-  load();
+  load(); toTop();
 });
 $("#filtersBtn").onclick = () => $("#side").classList.toggle("open");
 
@@ -349,6 +386,7 @@ function updateWatchedBtn() {
 function openPlayer(v) {
   current = v;
   $("#player").classList.remove("hidden");
+  $("#player").scrollTop = 0;
   document.body.style.overflow = "hidden";
   $("#pTitle").textContent = v.title;
   $("#pMeta").innerHTML = `<span class="inst ${v.institution ? "" : "unknown"}">${esc(v.institution || "Unverified origin")}</span>
@@ -412,7 +450,12 @@ function closePlayer() {
 $("#closePlayer").onclick = closePlayer;
 $("#player").addEventListener("click", (e) => { if (e.target.id === "player") closePlayer(); });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !$("#player").classList.contains("hidden")) closePlayer();
+  if (e.key === "Escape") {
+    if (!$("#player").classList.contains("hidden")) closePlayer();
+  }
+  if (e.key === "/" && !e.metaKey && !e.ctrlKey && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "")) {
+    e.preventDefault(); $("#q").focus();
+  }
 });
 $("#pWatched").onclick = () => { setWatched(current, !current.watched); updateWatchedBtn(); };
 $("#pHide").onclick = () => { store.hidden[current.id] = Date.now(); persist(); toast("Hidden from recommendations"); $("#pNext").click(); };
@@ -440,7 +483,6 @@ fetch("library.json")
   .then((r) => { if (!r.ok) throw new Error(r.statusText); return r.json(); })
   .then((lib) => {
     LIB = lib;
-    $("#snapshotPill").textContent = `${lib.videos.length} lectures · snapshot ${lib.generated}`;
     refreshAll(true);
   })
   .catch((e) => {

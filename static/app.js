@@ -8,13 +8,14 @@ const PAGE = 48;
 const state = {
   view: "recommended", q: "", topic: "", institution: "", source: "", field: "", sort: "quality",
   known: true, weight: 0.6, offset: 0, items: [], total: 0, lastJobDone: -1,
+  open: {}, // which catalogs are expanded in the sidebar tree; all start collapsed
 };
 try { // per-browser UI preferences only; watch history lives in the server's SQLite DB
   const saved = JSON.parse(localStorage.getItem("csvf-prefs") || "{}");
   Object.assign(state, saved);
 } catch (_) {}
 const savePrefs = () => {
-  try { localStorage.setItem("csvf-prefs", JSON.stringify({ weight: state.weight, known: state.known, sort: state.sort })); } catch (_) {}
+  try { localStorage.setItem("csvf-prefs", JSON.stringify({ weight: state.weight, known: state.known, sort: state.sort, field: state.field })); } catch (_) {}
 };
 
 const api = async (path, body) => {
@@ -25,6 +26,8 @@ const api = async (path, body) => {
   if (!r.ok) throw new Error(j.error || r.statusText);
   return j;
 };
+
+const toTop = () => window.scrollTo({ top: 0 });
 
 function toast(msg, ms = 2600) {
   const t = $("#toast"); t.textContent = msg; t.classList.remove("hidden");
@@ -143,14 +146,11 @@ async function setWatched(v, watched) {
 /* ---------------- facets / sidebar ---------------- */
 async function loadFacets() {
   const f = await api("/api/facets");
+  loadFacets._f = f;
   $("#cWatched").textContent = f.watched || "";
   $("#cProgress").textContent = f.in_progress || "";
   $("#cHidden").textContent = f.hidden || "";
-  const tf = f.topic_fields || {};
-  const shown = f.topics.filter(([t]) => !state.field || !tf[t] || tf[t] === state.field);
-  const tl = $("#topicList");
-  tl.innerHTML = `<button data-topic="" class="${state.topic ? "" : "active"}">All topics <small>${state.field ? "" : f.total}</small></button>` +
-    shown.map(([t, n]) => `<button data-topic="${esc(t)}" class="${state.topic === t ? "active" : ""}">${esc(t)} <small>${n}</small></button>`).join("");
+  renderTree();
   const sel = $("#instSel"), cur = state.institution;
   sel.innerHTML = `<option value="">All institutions</option>` +
     f.institutions.map(([i, n]) => `<option value="${esc(i)}">${esc(i)} (${n})</option>`).join("");
@@ -158,15 +158,54 @@ async function loadFacets() {
   const ia = f.sources.archive || 0, yt = f.sources.youtube || 0;
   $("#libStats").textContent = `${f.total} videos in library · ${yt} YouTube · ${ia} Internet Archive`;
 }
+/* one tree for catalogs (fields) and their topics: a catalog header expands/collapses its
+   group (whole button), the "All <catalog>" row inside filters to the whole field, an
+   indented topic filters to that topic. All catalogs start collapsed for a clean overview. */
+function topicTree(topicCounts, tf, fields, total) {
+  const groups = Object.fromEntries(fields.map(([k]) => [k, []]));
+  const other = [];
+  for (const [t, n] of topicCounts) (groups[tf[t]] || other).push([t, n]);
+  let html = `<button data-topic="" data-field="" class="${!state.topic && !state.field ? "active" : ""}">All catalogs <small>${total}</small></button>`;
+  for (const [k, label, n] of fields) {
+    if (!groups[k].length) continue;
+    const open = !!state.open[k];
+    html += `<button class="group ${state.field === k && !state.topic ? "active" : ""}" data-toggle="${k}" title="${open ? "Collapse" : "Expand"}">` +
+      `<span class="tw">${open ? "▾" : "▸"}</span>${esc(label)} <small>${n}</small></button>`;
+    if (open) {
+      html += `<button class="sub" data-field="${k}" data-topic="">All ${esc(label)} <small>${n}</small></button>`;
+      html += groups[k].map(([t, c]) => `<button class="sub ${state.topic === t ? "active" : ""}" data-topic="${esc(t)}" data-field="">${esc(t)} <small>${c}</small></button>`).join("");
+    }
+  }
+  html += other.map(([t, c]) => `<button class="group other ${state.topic === t ? "active" : ""}" data-topic="${esc(t)}" data-field="">${esc(t)} <small>${c}</small></button>`).join("");
+  return html;
+}
+
+function renderTree() {
+  const f = loadFacets._f; if (!f) return;
+  const tree = topicTree(f.topics, f.topic_fields || {}, f.fields || [], f.total);
+  if (tree !== renderTree._last) { renderTree._last = tree; $("#topicList").innerHTML = tree; }
+  updateCatalogChip();
+}
+
+function updateCatalogChip() {
+  const f = (loadFacets._f?.fields || []).find(([k]) => k === state.field);
+  $("#catalogBtn").textContent = f ? f[1] : "All catalogs";
+}
+$("#catalogBtn").onclick = () => { // jump to the catalog tree (opens the sidebar on mobile)
+  $("#side").classList.add("open");
+  $("#topicList").scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
 $("#topicList").addEventListener("click", (e) => {
+  const g = e.target.closest("[data-toggle]");
+  if (g) { const k = g.dataset.toggle; state.open[k] = !state.open[k]; renderTree(); return; }
   const b = e.target.closest("button"); if (!b) return;
   state.topic = b.dataset.topic;
-  [...$("#topicList").children].forEach((x) => x.classList.toggle("active", x === b));
-  load();
+  state.field = b.dataset.field;
+  savePrefs(); renderTree(); loadFacets(); load();
 });
 $("#instSel").onchange = (e) => { state.institution = e.target.value; load(); };
 $("#sourceSel").onchange = (e) => { state.source = e.target.value; load(); };
-$("#fieldSel").onchange = (e) => { state.field = e.target.value; state.topic = ""; loadFacets(); load(); };
 $("#sort").onchange = (e) => { state.sort = e.target.value; savePrefs(); load(); };
 $("#known").onchange = (e) => { state.known = e.target.checked; savePrefs(); load(); };
 const weightHint = () => {
@@ -196,7 +235,7 @@ $("#tabs").addEventListener("click", (e) => {
   state.view = b.dataset.view;
   $("#side").classList.toggle("hidden", state.view === "institutions");
   $("#layout").classList.toggle("wide", state.view === "institutions");
-  load();
+  load(); toTop();
 });
 
 $("#filtersBtn").onclick = () => $("#side").classList.toggle("open");
@@ -322,6 +361,7 @@ function updateWatchedBtn() {
 async function openPlayer(v) {
   current = v;
   $("#player").classList.remove("hidden");
+  $("#player").scrollTop = 0;
   document.body.style.overflow = "hidden";
   $("#pTitle").textContent = v.title;
   $("#pMeta").innerHTML = `<span class="inst ${v.institution ? "" : "unknown"}">${esc(v.institution || "Unverified origin")}</span>
@@ -376,6 +416,9 @@ $("#closePlayer").onclick = closePlayer;
 $("#player").addEventListener("click", (e) => { if (e.target.id === "player") closePlayer(); });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { if (!$("#player").classList.contains("hidden")) closePlayer(); $("#importDlg").classList.add("hidden"); }
+  if (e.key === "/" && !e.metaKey && !e.ctrlKey && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName || "")) {
+    e.preventDefault(); $("#q").focus();
+  }
 });
 $("#pWatched").onclick = async () => { await setWatched(current, !current.watched); updateWatchedBtn(); };
 $("#pHide").onclick = async () => { await api("/api/hide", { id: current.id, hidden: true }); toast("Hidden from recommendations"); $("#pNext").click(); };

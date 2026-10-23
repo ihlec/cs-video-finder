@@ -2,7 +2,7 @@
   --bg: #f6f7fb; --panel: #ffffff; --ink: #161a2b; --muted: #636a82; --line: #e3e6ef;
   --accent: #4f46e5; --accent-ink: #fff; --accent-soft: #eceafe; --good: #10915a; --warn: #b7791f;
   --shadow: 0 1px 2px rgba(20,24,40,.06), 0 4px 16px rgba(20,24,40,.06);
-  --radius: 12px;
+  --radius: 12px; --radius-s: 8px; --radius-l: 16px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
@@ -36,7 +36,7 @@ button, input, select { font: inherit; color: inherit; }
 .top-actions { display: flex; gap: 8px; align-items: center; }
 
 .btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
-  padding: 7px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap;
+  padding: 7px 14px; border-radius: var(--radius-s); cursor: pointer; font-weight: 600; white-space: nowrap;
   text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
 .btn:hover { filter: brightness(1.08); }
 .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
@@ -44,7 +44,10 @@ button, input, select { font: inherit; color: inherit; }
 .btn:disabled { opacity: .5; cursor: default; }
 
 .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
-  background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; max-width: 340px; }
+  background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; max-width: 340px;
+  border: 1px solid transparent; }
+button.pill { cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
+button.pill:hover { border-color: var(--accent); }
 .pill span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor;
   border-right-color: transparent; animation: spin .8s linear infinite; flex: none; }
@@ -75,6 +78,14 @@ button, input, select { font: inherit; color: inherit; }
 .topics button:hover { background: var(--accent-soft); }
 .topics button.active { background: var(--accent); color: var(--accent-ink); }
 .topics button small { color: inherit; opacity: .6; }
+.topics button.group { font-weight: 700; margin-top: 10px; }
+.topics button.sub { font-size: 13px; margin-left: 10px; padding-left: 12px;
+  border-left: 2px solid var(--line); border-radius: 0 var(--radius-s) var(--radius-s) 0; }
+.topics button.sub.active, .topics button.sub:hover { border-left-color: var(--accent); }
+
+/* catalog tree chevrons */
+.topics .tw { display: inline-block; width: 18px; color: var(--muted); }
+.topics button.active .tw { color: inherit; }
 
 .banner { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 16px 18px; margin-bottom: 18px; box-shadow: var(--shadow); }
@@ -127,8 +138,9 @@ table.inst-t { width: 100%; border-collapse: collapse; background: var(--panel);
 
 /* modal / player */
 .modal { position: fixed; inset: 0; z-index: 50; background: rgba(6,8,15,.72); display: flex; align-items: flex-start; justify-content: center; padding: 4vh 16px; overflow-y: auto; }
-.modal-card { position: relative; background: var(--panel); border-radius: 14px; width: min(1100px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.4); overflow: hidden; }
+.modal-card { position: relative; background: var(--panel); border-radius: var(--radius-l); width: min(1100px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.4); overflow: hidden; }
 .modal-card.small { width: min(520px, 100%); padding: 22px; }
+.modal-card.small h3 { margin: 0 0 4px; }
 .modal-card.small input { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); margin: 8px 0 14px; }
 .modal-card .row { display: flex; justify-content: flex-end; }
 .close { position: absolute; top: 8px; right: 10px; z-index: 3; width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(0,0,0,.55); color: #fff; font-size: 22px; cursor: pointer; line-height: 1; }
@@ -162,6 +174,9 @@ table.inst-t { width: 100%; border-collapse: collapse; background: var(--panel);
 
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--panel); padding: 10px 16px; border-radius: 10px; z-index: 80; font-weight: 600; box-shadow: var(--shadow); }
 
+@media (max-width: 900px), (max-height: 540px) {
+  .top { position: static; }
+}
 @media (max-width: 900px) {
   .top { flex-wrap: wrap; padding: 10px 16px; }
   .brand { min-width: 0; }

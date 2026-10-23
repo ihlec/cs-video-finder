@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>CS Lecture Finder</title>
+<title>Lecture Finder</title>
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%234f46e5'/><path d='M12 9l12 7-12 7z' fill='white'/></svg>">
 </head>
@@ -12,14 +12,15 @@
 <header class="top">
   <div class="brand">
     <span class="logo"><svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8"/><path d="M12 9l12 7-12 7z"/></svg></span>
-    <div><strong>Lecture Finder</strong><small>free CS &amp; physics courses, ranked by quality</small></div>
+    <div><strong>Lecture Finder</strong><small>free CS, physics &amp; wisdom lectures, ranked by quality</small></div>
   </div>
   <form id="searchForm" class="search" autocomplete="off">
     <svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-    <input id="q" type="search" placeholder="Filter your library — e.g. compilers, 6.006, transformers">
+    <input id="q" type="search" placeholder="Search the library — e.g. compilers, quantum, stoicism">
     <button type="button" id="webSearchBtn" class="btn ghost" title="Search YouTube & Internet Archive for this topic and add results">Find more online</button>
   </form>
   <div class="top-actions">
+    <button id="catalogBtn" class="pill" title="Switch catalog"></button>
     <div id="jobPill" class="pill hidden"><span class="spinner"></span><span id="jobText"></span></div>
     <button id="crawlBtn" class="btn">Refresh catalog</button>
     <button id="importBtn" class="btn ghost">Import playlist</button>
@@ -38,14 +39,6 @@
 
 <div class="layout" id="layout">
   <aside class="side" id="side">
-    <section>
-      <h4>Field</h4>
-      <select id="fieldSel">
-        <option value="">All fields</option>
-        <option value="cs">Computer Science</option>
-        <option value="physics">Physics</option>
-      </select>
-    </section>
     <section>
       <h4>Quality = origin + views</h4>
       <div class="weight">
@@ -76,7 +69,7 @@
       </select>
     </section>
     <section>
-      <h4>Topics</h4>
+      <h4>Catalog &amp; topics</h4>
       <div id="topicList" class="topics"></div>
     </section>
     <p class="hint" id="libStats"></p>

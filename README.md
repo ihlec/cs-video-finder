@@ -1,11 +1,13 @@
 # Lecture Finder
 
-**Try it:** https://bafybeiefyl2ve7fnrscvk227jqyf3aeh5rofs2w527vjiamkgt5uokdz4a.ipfs.inbrowser.link
+**Try it:** https://bafybeiffmv32ztsg7tir6jpzbz3364cl4zgjplwjgbzuygzboyvp3uainu.ipfs.inbrowser.link
 (static snapshot on IPFS — watch history stays in your browser)
 
-A local web UI that finds **free computer-science and physics lecture videos**, ranks them by **quality**
-(institution reputation + view count), lets you **stream them inside the app**, and
-**remembers what you've watched**.
+A local web UI that finds **free lecture and talk videos** in three catalogs — **Computer Science**,
+**Physics**, and **Wisdom & Life** (philosophy in the broadest sense: life advice and experience,
+psychology, history, money, meaning) — ranks them by **quality** (institution reputation + view
+count), lets you **stream them inside the app**, and **remembers what you've watched**. Each visit
+starts with a catalog picker; the sidebar groups every topic under its catalog.
 
 ## Start
 
