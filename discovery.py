@@ -232,6 +232,13 @@ TOPIC_QUERIES = [
     "functional programming lecture course", "quantum computing lecture course",
     "robotics lecture course", "human computer interaction lecture course",
     "parallel computing lecture course", "information theory lecture course",
+    # physics
+    "physics lecture university course", "classical mechanics lecture course",
+    "electricity and magnetism lecture course", "quantum mechanics lecture course",
+    "thermodynamics statistical mechanics lecture", "special relativity lecture course",
+    "general relativity lecture course", "astrophysics lecture course",
+    "cosmology lecture course", "particle physics lecture course",
+    "condensed matter physics lecture", "vibrations and waves lecture course",
 ]
 
 DEEP_SUFFIXES = ["algorithms lecture", "machine learning lecture", "systems lecture",
@@ -246,9 +253,12 @@ def crawl_plan(institutions, deep: bool = False):
         if not s:
             continue
         plan.append(("youtube", f"{s} computer science lecture"))
+        if inst.get("physics", True):  # institution name reads better than CS-flavored search phrases
+            plan.append(("youtube", f"{inst['name']} physics lecture"))
         if deep:
             plan += [("youtube", f"{s} {suf}") for suf in DEEP_SUFFIXES]
-    plan += [("archive", '"computer science"'), ("archive", "algorithms OR programming OR \"machine learning\"")]
+    plan += [("archive", '"computer science"'), ("archive", "algorithms OR programming OR \"machine learning\""),
+             ("archive", "physics lectures")]
     return plan
 
 

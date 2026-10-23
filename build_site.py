@@ -16,6 +16,8 @@ import re
 import sqlite3
 import time
 
+from topics import FIELD_OF
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(HERE, "data", "library.db")
 OUT = os.path.join(HERE, "site", "library.json")
@@ -66,9 +68,11 @@ def main():
         })
     con.close()
 
+    topics_seen = {t for v in videos for t in v["topics"]}
     out = {
         "generated": time.strftime("%Y-%m-%d"),
         "institutions": sorted(inst_count.items(), key=lambda x: (-scores.get(x[0], 0), x[0])),
+        "topic_fields": {t: FIELD_OF.get(t) for t in topics_seen},
         "videos": videos,
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

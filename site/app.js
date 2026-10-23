@@ -12,7 +12,7 @@ try { Object.assign(store, JSON.parse(localStorage.getItem(LS_KEY) || "{}")); } 
 const persist = () => { try { localStorage.setItem(LS_KEY, JSON.stringify(store)); } catch (_) {} };
 
 const state = {
-  view: "recommended", q: "", topic: "", institution: "", source: "", sort: "quality",
+  view: "recommended", q: "", topic: "", institution: "", source: "", field: "", sort: "quality",
   known: true, weight: 0.6, offset: 0, items: [], total: 0,
 };
 Object.assign(state, store.prefs || {});
@@ -92,6 +92,10 @@ function listVideos() {
     }
   }
   if (state.topic) rows = rows.filter((r) => r.topics.includes(state.topic));
+  if (state.field) { // topics without a field ("Other") show under every field
+    const tf = LIB.topic_fields || {};
+    rows = rows.filter((r) => r.topics.some((t) => !tf[t] || tf[t] === state.field));
+  }
   if (state.source) rows = rows.filter((r) => r.source === state.source);
   if (state.known && (v === "recommended" || v === "all")) rows = rows.filter((r) => r.institution);
   if (state.institution) rows = rows.filter((r) => r.institution === state.institution);
@@ -202,10 +206,12 @@ function loadFacets() {
 
   const topics = {};
   for (const v of LIB.videos) for (const t of v.topics) topics[t] = (topics[t] || 0) + 1;
+  const tf = LIB.topic_fields || {};
+  const shown = Object.entries(topics).sort((a, b) => b[1] - a[1])
+    .filter(([t]) => !state.field || !tf[t] || tf[t] === state.field);
   const tl = $("#topicList");
-  tl.innerHTML = `<button data-topic="" class="${state.topic ? "" : "active"}">All topics <small>${LIB.videos.length}</small></button>` +
-    Object.entries(topics).sort((a, b) => b[1] - a[1])
-      .map(([t, n]) => `<button data-topic="${esc(t)}" class="${state.topic === t ? "active" : ""}">${esc(t)} <small>${n}</small></button>`).join("");
+  tl.innerHTML = `<button data-topic="" class="${state.topic ? "" : "active"}">All topics <small>${state.field ? "" : LIB.videos.length}</small></button>` +
+    shown.map(([t, n]) => `<button data-topic="${esc(t)}" class="${state.topic === t ? "active" : ""}">${esc(t)} <small>${n}</small></button>`).join("");
 
   const sel = $("#instSel"), cur = state.institution;
   sel.innerHTML = `<option value="">All institutions</option>` +
@@ -223,6 +229,7 @@ $("#topicList").addEventListener("click", (e) => {
 });
 $("#instSel").onchange = (e) => { state.institution = e.target.value; load(); };
 $("#sourceSel").onchange = (e) => { state.source = e.target.value; load(); };
+$("#fieldSel").onchange = (e) => { state.field = e.target.value; state.topic = ""; refreshAll(true); };
 $("#sort").onchange = (e) => { state.sort = e.target.value; savePrefs(); load(); };
 $("#known").onchange = (e) => { state.known = e.target.checked; savePrefs(); load(); };
 const weightHint = () => {

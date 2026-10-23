@@ -192,10 +192,10 @@ def enrich(row: sqlite3.Row, weight: float) -> dict:
 
 
 def keep_video(v: dict) -> bool:
-    """Only keep things that are plausibly CS lectures from a sensible origin."""
+    """Only keep things that are plausibly lectures from a sensible origin."""
     if INST.match(v.get("channel")):
         return True
-    return bool(v.get("_lectureish")) and v.get("topics") not in ("", "Other CS")
+    return bool(v.get("_lectureish")) and v.get("topics") not in ("", "Other", "Other CS")
 
 
 # --------------------------------------------------------------------------
@@ -207,6 +207,7 @@ def list_videos(params: dict) -> dict:
     weight = float(g("w", DEFAULT_WEIGHT))
     q = (g("q", "") or "").strip()
     topic = g("topic", "")
+    field = g("field", "")
     inst_filter = g("institution", "")
     known_only = g("known", "1") == "1"
     source = g("source", "")
@@ -252,6 +253,9 @@ def list_videos(params: dict) -> dict:
         rows = [r for r in rows if r["institution"]]
     if inst_filter:
         rows = [r for r in rows if r["institution"] == inst_filter]
+    if field:  # topics without a field ("Other") show under every field
+        from topics import FIELD_OF
+        rows = [r for r in rows if any(FIELD_OF.get(t, field) == field for t in r["topics"])]
 
     keyf = {
         "quality": lambda r: r["quality"],
@@ -312,9 +316,11 @@ def facets() -> dict:
         if i:
             insts[i] = insts.get(i, 0) + 1
         sources[r["source"]] = sources.get(r["source"], 0) + 1
+    from topics import FIELD_OF
     return {
         "total": len(rows), "watched": watched, "in_progress": progress, "hidden": hidden,
         "topics": sorted(topics.items(), key=lambda x: -x[1]),
+        "topic_fields": {t: FIELD_OF.get(t) for t in topics},
         "institutions": sorted(insts.items(), key=lambda x: (-INST.score(x[0]), x[0])),
         "sources": sources,
     }

@@ -32,12 +32,32 @@ TOPICS = {
     "Robotics": r"robotic|\brobot\b|control theory|autonomous",
     "HCI": r"human.computer interaction|\bhci\b|user interface design|ux design",
     "Parallel & HPC": r"parallel (computing|programming)|\bgpu\b|cuda|high performance computing|\bhpc\b|concurren",
+    # --- physics (specific topics first; General Physics is the catch-all) ---
+    "Classical Mechanics": r"classical mechanics|\b8\.01\b|newtonian mechanic|lagrangian|hamiltonian mechanic|analytical mechanics|rigid body dynamics",
+    "Electromagnetism": r"electromagneti|\b8\.02\b|electricity and magnetism|electrodynamics|maxwell'?s? equations",
+    "Quantum Physics": r"quantum (mechanic|physic|field theor|electrodynamic|optic)|\b8\.0[456]\b|schr(ö|o)dinger|wave function|\bqft\b|feynman",
+    "Thermo & Statistical Mechanics": r"thermodynamic|statistical (mechanic|physic)|\b8\.044\b|kinetic theory|heat engine|carnot",
+    "Relativity & Gravitation": r"\brelativity\b|gravitation|\b8\.033\b|\b8\.962\b|black hole|spacetime|event horizon",
+    "Astrophysics & Cosmology": r"astrophysic|cosmolog|astronom|stellar|galax|exoplanet|dark (matter|energy)|supernova",
+    "Particle & Nuclear Physics": r"particle physics|nuclear physics|standard model|\bquark|higgs|collider|\bqcd\b|plasma physics",
+    "Condensed Matter": r"condensed matter|solid.state physics|superconduct|semiconductor physics|many.body physics",
+    "Optics & Waves": r"\boptics\b|photonic|vibrations and waves|\b8\.03\b|laser physics|acoustics",
+    "General Physics": r"\bphysics\b",
 }
 _COMPILED = {k: re.compile(v, re.I) for k, v in TOPICS.items()}
 
+PHYSICS_TOPICS = {
+    "Classical Mechanics", "Electromagnetism", "Quantum Physics", "Thermo & Statistical Mechanics",
+    "Relativity & Gravitation", "Astrophysics & Cosmology", "Particle & Nuclear Physics",
+    "Condensed Matter", "Optics & Waves", "General Physics",
+}
+# topic -> field; the "Other" fallback belongs to no field and shows under every field filter
+FIELD_OF = {t: ("physics" if t in PHYSICS_TOPICS else "cs") for t in TOPICS}
+FIELDS = {"cs": "Computer Science", "physics": "Physics"}
+
 _LECTURE = re.compile(
     r"\blecture\b|\blec\b|\bcourse\b|\bclass\b|\bseminar\b|\btutorial\b|\bsession\b|"
-    r"\bcs ?\d{2,3}[a-z]?\b|\b\d{1,2}\.\d{3}\b|\b\d{2}-\d{3}\b|\bmit\b|opencourseware|semester|"
+    r"\bcs ?\d{2,3}[a-z]?\b|\b\d{1,2}\.\d{2,3}\b|\b\d{2}-\d{3}\b|\bmit\b|opencourseware|semester|"
     r"\b(fall|spring|winter|summer) \d{4}\b|vorlesung|\bunit \d+|\bweek \d+|\bpart \d+",
     re.I,
 )
@@ -45,7 +65,7 @@ _LECTURE = re.compile(
 
 def classify(text: str, max_topics: int = 3) -> list[str]:
     hits = [k for k, rx in _COMPILED.items() if rx.search(text or "")]
-    return hits[:max_topics] or ["Other CS"]
+    return hits[:max_topics] or ["Other"]
 
 
 def looks_like_lecture(title: str, desc: str = "") -> bool:

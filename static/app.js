@@ -6,7 +6,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const PAGE = 48;
 
 const state = {
-  view: "recommended", q: "", topic: "", institution: "", source: "", sort: "quality",
+  view: "recommended", q: "", topic: "", institution: "", source: "", field: "", sort: "quality",
   known: true, weight: 0.6, offset: 0, items: [], total: 0, lastJobDone: -1,
 };
 try { // per-browser UI preferences only; watch history lives in the server's SQLite DB
@@ -53,6 +53,7 @@ const ICON = {
 function qs(extra = {}) {
   const p = new URLSearchParams({
     view: state.view, q: state.q, topic: state.topic, institution: state.institution, source: state.source,
+    field: state.field,
     sort: state.view === "watched" ? "watched_at" : state.view === "progress" ? "updated" : state.sort,
     known: state.known ? "1" : "0", w: state.weight, limit: PAGE, offset: state.offset, ...extra,
   });
@@ -145,9 +146,11 @@ async function loadFacets() {
   $("#cWatched").textContent = f.watched || "";
   $("#cProgress").textContent = f.in_progress || "";
   $("#cHidden").textContent = f.hidden || "";
+  const tf = f.topic_fields || {};
+  const shown = f.topics.filter(([t]) => !state.field || !tf[t] || tf[t] === state.field);
   const tl = $("#topicList");
-  tl.innerHTML = `<button data-topic="" class="${state.topic ? "" : "active"}">All topics <small>${f.total}</small></button>` +
-    f.topics.map(([t, n]) => `<button data-topic="${esc(t)}" class="${state.topic === t ? "active" : ""}">${esc(t)} <small>${n}</small></button>`).join("");
+  tl.innerHTML = `<button data-topic="" class="${state.topic ? "" : "active"}">All topics <small>${state.field ? "" : f.total}</small></button>` +
+    shown.map(([t, n]) => `<button data-topic="${esc(t)}" class="${state.topic === t ? "active" : ""}">${esc(t)} <small>${n}</small></button>`).join("");
   const sel = $("#instSel"), cur = state.institution;
   sel.innerHTML = `<option value="">All institutions</option>` +
     f.institutions.map(([i, n]) => `<option value="${esc(i)}">${esc(i)} (${n})</option>`).join("");
@@ -163,6 +166,7 @@ $("#topicList").addEventListener("click", (e) => {
 });
 $("#instSel").onchange = (e) => { state.institution = e.target.value; load(); };
 $("#sourceSel").onchange = (e) => { state.source = e.target.value; load(); };
+$("#fieldSel").onchange = (e) => { state.field = e.target.value; state.topic = ""; loadFacets(); load(); };
 $("#sort").onchange = (e) => { state.sort = e.target.value; savePrefs(); load(); };
 $("#known").onchange = (e) => { state.known = e.target.checked; savePrefs(); load(); };
 const weightHint = () => {
